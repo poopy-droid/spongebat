@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 REM Set the base URL for the series (replace with the one you want)
 set "seriesURL=https://www.megacartoons.net/video-serie/spongebob-squarepants/"
 
-REM Set the base URL  (change as needed  take from html of video src) 
+REM Set the base URL
 set "baseURL=https://ww.megacartoons.net/video/SpongeBob-SquarePants-"
 
 REM Set the number of pages to scrape (replace as needed)
@@ -37,7 +37,7 @@ for /L %%p in (1, 1, %numPages%) do (
         set "title=!title:&#8217;=!"
         set "title=!title:&#8221;=!"
         set "title=!title:&#8220;=!"
-        set "title=!title:&#x2665; =!"
+        set "title=!title:&#x2665;=!"
 
         REM Extract the video link from the title
         for /f "tokens=2 delims=('" %%v in ('echo !title! ^| find /i "href="') do (
@@ -59,38 +59,93 @@ for /L %%p in (1, 1, %numPages%) do (
     del temp.html
 )
 
-REM Prompt the user to choose a number
-set /p "choice=Enter the number of the video to play: "
+:menu
+REM Display the menu
+echo.
+echo 1. Play a specific video
+echo 2. Play a random video
+echo 3. Binge-watch all videos
+echo 4. Exit
 
-REM Check if the input is a number and within the valid range
-if defined choice (
-    set /a "choice=choice"
-    if %choice% geq 1 if %choice% lss %counter% (
-        REM Get the selected video link and title
-        set "selectedVideoLink=!videoLinks[%choice%]!"
-        set "selectedVideoTitle=!videoTitles[%choice%]!"
+REM Prompt the user to enter their choice
+set /p "menuChoice=Enter your choice: "
 
-        REM Replace spaces with hyphens and remove periods in the title when constructing the URL
-        set "selectedVideoTitleForURL=!selectedVideoTitle: =-!"
-        set "selectedVideoTitleForURL=!selectedVideoTitleForURL:.=!"
-
-
-        REM Construct the full video URL with .mp4 at the end, removing ? and ,
-        set "selectedVideoURL=!baseURL!!selectedVideoLink!!selectedVideoTitleForURL!.mp4"
-        set "selectedVideoURL=!selectedVideoURL:?=!"
-        set "selectedVideoURL=!selectedVideoURL:,=!"
-
-        REM Play the video using Windows Media Player in a separate process
-        if defined selectedVideoURL (
-            echo Playing video: !selectedVideoURL!
-            start "" "wmplayer.exe" "!selectedVideoURL!"
-        ) else (
-            echo Invalid video link.
-        )
-    ) else (
-        echo Invalid choice.
-    )
+REM Process the user's choice
+if "%menuChoice%"=="1" (
+    call :playSpecificVideo
+) else if "%menuChoice%"=="2" (
+    call :playRandomVideo
+) else if "%menuChoice%"=="3" (
+    call :bingeWatch
+) else if "%menuChoice%"=="4" (
+    echo Exiting...
+    goto :eof
+) else (
+    echo Invalid choice. Please try again.
+    goto :menu
 )
 
 REM Pause to keep the window open
 pause
+goto :eof
+
+:playSpecificVideo
+REM Prompt the user to enter the number of the video to play
+set /p "choice=Enter the number of the video to play: "
+if not defined choice goto :eof
+
+REM Check if the input is a number and within the valid range
+set /a "choice=choice"
+if %choice% geq 1 if %choice% lss %counter% (
+    call :playVideo %choice%
+) else (
+    echo Invalid choice.
+)
+goto :eof
+
+:playRandomVideo
+REM Generate a random number between 1 and the total number of videos
+set /a "randomChoice=!random! %% counter + 1"
+
+REM Call the function to play the specific video using the random number
+call :playVideo %randomChoice%
+goto :eof
+
+:bingeWatch
+REM Loop through all videos and play each one
+for /L %%i in (1, 1, %counter%) do (
+    call :playVideo %%i
+)
+
+REM Pause to keep the window open
+pause
+goto :eof
+
+:playVideo
+REM Get the selected video link and title
+set "selectedVideoLink=!videoLinks[%1]!"
+set "selectedVideoTitle=!videoTitles[%1]!"
+
+REM Replace spaces with hyphens and remove periods in the title when constructing the URL
+set "selectedVideoTitleForURL=!selectedVideoTitle: =-!"
+set "selectedVideoTitleForURL=!selectedVideoTitleForURL:.=!"
+
+REM Construct the full video URL with .mp4 at the end, removing ? and ,
+set "selectedVideoURL=!baseURL!!selectedVideoLink!!selectedVideoTitleForURL!.mp4"
+set "selectedVideoURL=!selectedVideoURL:?=!"
+set "selectedVideoURL=!selectedVideoURL:,=!"
+
+REM Play the video using Windows Media Player in a separate process
+if defined selectedVideoURL (
+    echo Playing video: !selectedVideoURL!
+    call :waitVideoCompletion "!selectedVideoURL!"
+) else (
+    echo Invalid video link.
+)
+goto :eof
+
+:waitVideoCompletion
+REM Use start command with wait option to wait for Windows Media Player to exit
+start /wait wmplayer.exe "%~1"
+echo Video playback complete.
+goto :eof
