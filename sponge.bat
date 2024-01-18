@@ -1,12 +1,11 @@
 @echo off
 setlocal enabledelayedexpansion
 
-
 REM Set the base URL for the series (replace with the one you want)
 set "seriesURL=https://www.megacartoons.net/video-serie/spongebob-squarepants/"
 
-REM Set the base URL
-set "baseURL=https://ww.megacartoons.net"
+REM Set the base URL  (change as needed  take from html of video src) 
+set "baseURL=https://ww.megacartoons.net/video/SpongeBob-SquarePants-"
 
 REM Set the number of pages to scrape (replace as needed)
 set "numPages=14"
@@ -34,10 +33,11 @@ for /L %%p in (1, 1, %numPages%) do (
         REM Remove <i class="icon-right"></i>
         set "title=!title:<i class="icon-right"></i> =!"
 
-        REM Replace &#8217; and &#8221; and &#8220; with nothing (add as needed )
+        REM Replace &#8217; and &#8221; and &#8220; with nothing (add as needed)
         set "title=!title:&#8217;=!"
         set "title=!title:&#8221;=!"
         set "title=!title:&#8220;=!"
+        set "title=!title:&#x2665; =!"
 
         REM Extract the video link from the title
         for /f "tokens=2 delims=('" %%v in ('echo !title! ^| find /i "href="') do (
@@ -74,8 +74,11 @@ if defined choice (
         set "selectedVideoTitleForURL=!selectedVideoTitle: =-!"
         set "selectedVideoTitleForURL=!selectedVideoTitleForURL:.=!"
 
-        REM Construct the full video URL with .mp4 at the end
-        set "selectedVideoURL=!baseURL!!selectedVideoLink!/video/SpongeBob-SquarePants-!selectedVideoTitleForURL!.mp4"
+
+        REM Construct the full video URL with .mp4 at the end, removing ? and ,
+        set "selectedVideoURL=!baseURL!!selectedVideoLink!!selectedVideoTitleForURL!.mp4"
+        set "selectedVideoURL=!selectedVideoURL:?=!"
+        set "selectedVideoURL=!selectedVideoURL:,=!"
 
         REM Play the video using Windows Media Player in a separate process
         if defined selectedVideoURL (
