@@ -2,7 +2,7 @@
 play spongebob from cmd (customizable)
 To customize, replace series URL 
 and numpages
-and the special char replacement as needed
+and replace the special char as needed
 see documentation  in the .bat 
 
 ps: to continue the autoplay you need to close the player window
